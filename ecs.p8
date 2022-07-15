@@ -2,7 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 36
 __lua__
 -- cpiod ecs
--- 250 tokens (155 without asserts)
+-- 255 tokens (155 without asserts)
 
 -- world
 _ents={}
@@ -50,8 +50,8 @@ function ent()
     rawset(self,cmp._cn,cmp)
     -- remove this function if you remove asserts
     -- it's useful but costly
-    check_no_duplicates(self)
     cmp._cn=nil -- technically not required
+    check_no_duplicates(self)
    end
    return self
   end,
