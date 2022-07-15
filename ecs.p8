@@ -2,12 +2,27 @@ pico-8 cartridge // http://www.pico-8.com
 version 36
 __lua__
 -- cpiod ecs
--- 191 tokens (155 without asserts)
+-- 250 tokens (155 without asserts)
 
 -- world
 _ents={}
 
 function ent()
+ -- you can remove this function
+ -- if you delete the asserts
+ function check_no_duplicates(self)
+  for k1,t1 in pairs(self) do
+   for k2,t2 in pairs(self) do
+    if k1<k2 then
+	    for f1,_ in pairs(t1) do
+	     for f2,_ in pairs(t2) do
+	      assert(k1==k2 or f1!=f2,"duplicated field "..f1.." in "..k1.." and "..k2)
+	     end
+	    end
+    end
+   end
+  end
+ end
  return add(_ents,
   setmetatable({},{
   -- check value in components
@@ -33,6 +48,9 @@ function ent()
     -- check if already existing
     assert(rawget(self,cmp._cn)==nil,"already existing: "..cmp._cn)
     rawset(self,cmp._cn,cmp)
+    -- remove this function if you remove asserts
+    -- it's useful but costly
+    check_no_duplicates(self)
     cmp._cn=nil -- technically not required
    end
    return self
@@ -69,7 +87,7 @@ b=ent()
 -- add components
 b+=cmp("blob",{hp=1,mp=6,x=12,y=23})
 b+="bleed" -- just use a string if no field
--- b+="bleed" -- no! duplicated components are forbidden!
+-- b+="bleed" -- crashes: duplicated components are forbidden!
 
 -- how it looks internally:
 -- b={bleed={},blob={hp=1,...}}
@@ -81,6 +99,7 @@ b.hp+=1 -- it must exist
 
 -- it means all component
 -- field names must be unique!
+-- b+=cmp("test",{hp=4}) -- crashes
 
 -- new system
 sys_heal=sys({"blob"},
@@ -98,7 +117,7 @@ sys_heal(5) -- double "bleed" remove is not a problem
 ?"hp after sys:"..b.hp
 
 -- delete from world
-del(ents,b)
+del(_ents,b)
 -- b won't be updated
 sys_heal(4)
 ?"hp after 3nd sys:"..b.hp
