@@ -2,7 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 36
 __lua__
 -- cpiod ecs
--- 255 tokens (155 without asserts)
+-- 276 tokens (176 without asserts)
 
 -- world
 _ents={}
@@ -23,19 +23,21 @@ function ent()
    end
   end
  end
+ 
  return add(_ents,
   setmetatable({},{
   -- check value in components
   -- components cannot be accessed directly
   __index=function(self,a)
 	  for _,t in pairs(self) do
-	   if(t[a]) return t[a]
+	   if(t[a]!=nil) return t[a]
 	  end
 	  assert(false,"field not found:"..a)
   end,
   __newindex=function(self,a,v)
+   assert(v!=nil)
 	  for _,t in pairs(self) do
-	   if(t[a]) t[a]=v return
+	   if(t[a]!=nil) t[a]=v return
 	  end
 	  assert(false,"field not found:"..a)
   end,
@@ -78,6 +80,10 @@ function sys(cmps,f)
   end
  end
 end
+
+function is(e,cn)
+ return rawget(e,cn)!=nil
+end
 -->8
 -- example
 
@@ -86,11 +92,11 @@ b=ent()
 
 -- add components
 b+=cmp("blob",{hp=1,mp=6,x=12,y=23})
-b+="bleed" -- just use a string if no field
--- b+="bleed" -- crashes: duplicated components are forbidden!
+b+="bleeding" -- just use a string if no field
+-- b+="bleeding" -- crashes: duplicated components are forbidden!
 
 -- how it looks internally:
--- b={bleed={},blob={hp=1,...}}
+-- b={bleeding={},blob={hp=1,...}}
 
 -- direct access to values
 ?"hp before:"..b.hp
@@ -105,15 +111,19 @@ b.hp+=1 -- it must exist
 sys_heal=sys({"blob"},
 	function(e,number)
 	 e.hp+=number -- use component
-	 e-="bleed" -- remove component
+	 -- check if an entity has a component
+	 if is(e,"bleeding") then
+	  e.hp-=1
+	 end
+  e-="bleeding" -- remove component
 	end)
 
 -- call system
-?"bleed before remove:"..tostr(rawget(b,"bleed"))
+?"bleeding before remove:"..tostr(rawget(b,"bleed"))
 ?"hp before sys:"..b.hp
 sys_heal(3) -- params are passed
-sys_heal(5) -- double "bleed" remove is not a problem
-?"bleed after remove:"..tostr(rawget(b,"bleed"))
+sys_heal(5) -- double "bleeding" remove is not a problem
+?"bleeding after remove:"..tostr(rawget(b,"bleed"))
 ?"hp after sys:"..b.hp
 
 -- delete from world
